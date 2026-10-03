@@ -50,6 +50,36 @@ try {
     Object.defineProperty(window, "audioProbe", { value: { contexts, get starts() { return sampleStarts; } } });
   });
   const state = (value: string) => page.waitForFunction(expected => document.documentElement.dataset.gameState === expected, value);
+  const checkViewport = async (label: string) => {
+    await page.waitForFunction(() => {
+      const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+      return canvas.width === innerWidth && canvas.height === innerHeight;
+    });
+    const layout = await page.evaluate(() => {
+      const rect = (id: string) => {
+        const bounds = document.getElementById(id)!.getBoundingClientRect();
+        return [bounds.x, bounds.y, bounds.width, bounds.height];
+      };
+      return {
+        stage: rect("stage"), canvas: rect("canvas"), viewport: [0, 0, innerWidth, innerHeight],
+        overflow: document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
+      };
+    });
+    check(layout.stage.every((value, index) => Math.abs(value - layout.viewport[index]!) < 1), `${label}: stage fills the browser window`);
+    check(layout.canvas.every((value, index) => Math.abs(value - layout.viewport[index]!) < 1), `${label}: canvas fills the browser window`);
+    check(!layout.overflow, `${label}: no page scrollbars`);
+  };
+  const clickGame = async (x: number, y: number) => {
+    const point = await page.locator("#canvas").evaluate((canvas, position) => {
+      const bounds = canvas.getBoundingClientRect();
+      const scale = Math.min(bounds.width / 480, bounds.height / 270);
+      return {
+        x: bounds.x + (bounds.width - 480 * scale) / 2 + position.x * scale,
+        y: bounds.y + (bounds.height - 270 * scale) / 2 + position.y * scale,
+      };
+    }, { x, y });
+    await page.mouse.click(point.x, point.y);
+  };
   const startGame = async () => {
     await page.locator("#play").click();
     await page.waitForFunction(() => document.documentElement.dataset.boot === "ready");
@@ -60,14 +90,14 @@ try {
   await page.screenshot({ path: `${output}/dead-signal-web-landing.png`, fullPage: true });
   await startGame();
   check(await page.locator("#overlay").isHidden(), "loader closes after WASM startup");
-  const dimensions = await page.locator("#canvas").evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height]);
-  check(dimensions[0] === 480 && dimensions[1] === 270, "fixed low-resolution framebuffer");
+  await checkViewport("desktop");
+  check(await page.locator("header, footer, iframe, .toolbar, .controls").count() === 0, "no surrounding page chrome or embedded-player layout");
   await page.keyboard.press("Enter");
   await state("difficulty");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
+  await clickGame(240, 172);
   await state("playing");
-  check(true, "title and difficulty navigation start the real campaign");
+  check(true, "keyboard and scaled mouse menu input start the real campaign");
+  check(await page.locator("#utilities").isHidden(), "all HTML utility controls disappear during gameplay");
   await page.waitForFunction(() => document.pointerLockElement?.id === "canvas");
   check(true, "mouse capture works from a real user gesture");
   await page.keyboard.down("KeyW");
@@ -133,6 +163,7 @@ try {
   await page.locator("#fullscreen").click();
   await page.waitForFunction(() => document.fullscreenElement?.id === "stage");
   check(true, "fullscreen button works");
+  await checkViewport("fullscreen");
   await page.evaluate(() => document.exitFullscreen());
   const performanceReport = await page.evaluate(() => ({
     ttfbMs: (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming).responseStart,
@@ -151,8 +182,21 @@ try {
   check(true, "Continue Run restores the saved campaign after a page reload");
   await page.keyboard.press("KeyP");
   await state("paused");
-  await page.setViewportSize({ width: 390, height: 844 });
-  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "mobile-size page has no horizontal overflow");
+  for (const viewport of [
+    { width: 1280, height: 720 },
+    { width: 1024, height: 768 },
+    { width: 2560, height: 1080 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await checkViewport(`${viewport.width}×${viewport.height}`);
+    await clickGame(240, 105);
+    await state("playing");
+    check(true, `${viewport.width}×${viewport.height}: menu mouse targets remain aligned after resize`);
+    await page.waitForFunction(() => document.pointerLockElement?.id === "canvas");
+    await page.keyboard.press("KeyP");
+    await state("paused");
+  }
   await page.screenshot({ path: `${output}/dead-signal-web-mobile.png`, fullPage: true });
   check(errors.length === 0, `no JavaScript/engine console errors: ${errors.join("\n")}`);
   console.log(JSON.stringify({ url, checks, errors, performance: performanceReport, gameplayFrames: frameReport }, null, 2));

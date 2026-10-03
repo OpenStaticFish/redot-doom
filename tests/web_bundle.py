@@ -3,6 +3,7 @@ from pathlib import Path
 import gzip
 import hashlib
 import json
+import re
 import struct
 import unittest
 
@@ -62,6 +63,17 @@ class WebBundleTests(unittest.TestCase):
         self.assertIn(self.manifest["build_id"], shell)
         self.assertNotIn("$GODOT_", shell)
         self.assertFalse(self.manifest["debug"], "production must use a release template")
+
+    def test_full_window_canvas_keeps_retro_viewport(self) -> None:
+        shell = (self.public / "index.html").read_text()
+        config = re.search(r"new Engine\((\{[^\n]+\})\)", shell)
+        self.assertIsNotNone(config)
+        self.assertEqual(json.loads(config.group(1))["canvasResizePolicy"], 2)
+        project = (ROOT / "project.godot").read_text()
+        self.assertIn("window/size/viewport_width=480", project)
+        self.assertIn("window/size/viewport_height=270", project)
+        self.assertIn('window/stretch/mode="viewport"', project)
+        self.assertIn('window/stretch/aspect="keep"', project)
 
     def test_notices_and_static_host_configuration(self) -> None:
         legal = self.public / "legal"

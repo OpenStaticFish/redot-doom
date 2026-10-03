@@ -1,6 +1,6 @@
 class_name BrowserSupport
 extends RefCounted
-## Small, optional bridge for browser lifecycle and the accessible page toolbar.
+## Small, optional bridge for browser lifecycle and the accessible web shell.
 
 var game: DeadSignalGame
 var shell: JavaScriptObject

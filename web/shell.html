@@ -8,49 +8,36 @@
   <title>DEAD SIGNAL — Play in your browser</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>
-    :root { color-scheme: dark; --orange: #ff3b0a; --muted: #aaaab4; --line: #303036; }
+    :root { color-scheme: dark; --orange: #ff3b0a; --muted: #aaaab4; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100svh; background: #09090b; color: #fff; font: 15px/1.5 system-ui, sans-serif; }
-    main { width: min(1120px, calc(100% - 40px)); margin: auto; padding: 24px 0; }
-    header, .toolbar, footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    header { margin-bottom: 20px; }
-    .brand { font-weight: 850; letter-spacing: -.04em; font-size: 24px; }
-    .brand span, .eyebrow { color: var(--orange); }
-    .eyebrow { font: 12px/1.4 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    body { color: #fff; font: 15px/1.5 system-ui, sans-serif; }
+    [hidden] { display: none !important; }
+    .eyebrow { color: var(--orange); font: 12px/1.4 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
     a { color: var(--muted); text-underline-offset: 4px; }
     a:hover { color: white; }
-    button { font: inherit; font-weight: 650; cursor: pointer; background: #19191d; color: white; border: 1px solid var(--line); padding: 9px 16px; border-radius: 4px; }
+    button { font: inherit; font-weight: 650; cursor: pointer; background: #19191d; color: white; border: 1px solid #303036; padding: 9px 16px; border-radius: 4px; }
     button:hover { border-color: var(--orange); }
     button:disabled { cursor: wait; opacity: .6; }
     :focus-visible { outline: 2px solid var(--orange); outline-offset: 4px; }
     .primary { background: var(--orange); color: #09090b; border-color: var(--orange); padding: 12px 28px; }
-    #stage { position: relative; aspect-ratio: 16/9; background: #000; border: 1px solid var(--line); border-top: 2px solid var(--orange); overflow: hidden; }
-    #stage:fullscreen { width: 100%; height: 100%; border: 0; display: grid; place-items: center; background: #000; }
-    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; outline: none; }
-    #stage:fullscreen canvas { width: min(100vw, 177.7778vh); height: min(56.25vw, 100vh); }
-    #overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at 50% 130%, #42170e, transparent 65%), #0b0b0e; text-align: center; }
-    #overlay[hidden] { display: none; }
+    #stage { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; border: 0; image-rendering: pixelated; outline: none; touch-action: none; }
+    #overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; overflow: auto; background: radial-gradient(ellipse at 50% 130%, #42170e, transparent 65%), #0b0b0e; text-align: center; }
     .launch { max-width: 520px; }
     h1 { font-size: clamp(36px, 7vw, 76px); letter-spacing: -.065em; line-height: 1; margin: 16px 0; }
     .tagline { color: var(--muted); margin: 0 0 26px; }
     #progress { display: block; accent-color: var(--orange); width: min(280px, 100%); height: 6px; margin: 22px auto 10px; }
-    #progress[hidden] { display: none; }
     #status { font-size: 13px; color: var(--muted); min-height: 20px; margin: 14px 0 0; }
-    .toolbar { margin-top: 12px; }
-    #session { color: var(--muted); font-size: 13px; }
-    .actions { display: flex; gap: 8px; }
-    .controls { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 20px 0; color: var(--muted); font-size: 13px; }
-    kbd { color: white; font: 12px ui-monospace, monospace; }
-    footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 12px; color: var(--muted); }
-    footer nav { display: flex; gap: 16px; }
-    @media (max-width: 600px) { main { width: calc(100% - 20px); padding: 12px 0; } header { margin-bottom: 12px; } .brand { font-size: 19px; } h1 { font-size: 36px; } .tagline { margin-bottom: 12px; font-size: 13px; } .eyebrow { font-size: 10px; } #overlay { padding: 12px; } #status { font-size: 11px; margin-top: 8px; } .primary { padding: 8px 20px; } footer { align-items: start; flex-direction: column; } }
+    #utilities { position: absolute; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 16px; padding: 6px 10px; border-radius: 4px; background: #09090bcc; font-size: 12px; }
+    #utilities button { padding: 5px 10px; font-size: 12px; }
+    .screen-reader-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    @media (max-width: 600px) { h1 { font-size: 36px; } .tagline { margin-bottom: 16px; font-size: 13px; } .eyebrow { font-size: 10px; } #overlay { padding: 16px; } #status { font-size: 12px; } }
   </style>
   $GODOT_HEAD_INCLUDE
 </head>
 <body>
-  <main>
-    <header><div class="brand">DEAD<span> SIGNAL</span></div><span class="eyebrow">Made with Redot</span></header>
-    <section id="stage" aria-label="DEAD SIGNAL game">
+  <main id="stage" aria-label="DEAD SIGNAL game">
       <canvas id="canvas" width="480" height="270" tabindex="0" aria-label="Game. Use WASD to move, mouse to aim, click to fire, P to pause.">A WebGL 2 browser is required.</canvas>
       <div id="overlay">
         <div class="launch">
@@ -59,22 +46,16 @@
           <p class="tagline">Three sectors. Six weapons. One way out.</p>
           <button class="primary" id="play" type="button">Connect &amp; play</button>
           <progress id="progress" aria-label="Downloading game" hidden></progress>
-          <p id="status" role="status" aria-live="polite">Keyboard + mouse required. No install.</p>
+          <p id="status" role="status" aria-live="polite">Keyboard + mouse required. P / Esc to pause.<br>Saves stay in this browser.</p>
+          <noscript>Enable JavaScript to play DEAD SIGNAL.</noscript>
         </div>
       </div>
-    </section>
-    <div class="toolbar">
-      <span id="session" role="status">Desktop browser / WebGL 2</span>
-      <div class="actions"><button id="pause" type="button" hidden>Pause</button><button id="fullscreen" type="button">Fullscreen</button></div>
-    </div>
-    <div class="controls" aria-label="Controls">
-      <span><kbd>W A S D</kbd> Move</span><span><kbd>Mouse / ← →</kbd> Aim</span><span><kbd>Click</kbd> Fire</span><span><kbd>E</kbd> Use</span><span><kbd>1–6</kbd> Weapons</span><span><kbd>Tab</kbd> Map</span><span><kbd>P / Esc</kbd> Pause</span>
-    </div>
-    <footer>
-      <span>Saves stay in this browser. Use the pause menu to save/load.</span>
-      <nav aria-label="Project links"><a href="/credits.html">Credits &amp; licenses</a><a href="https://github.com/OpenStaticFish/redot-doom" target="_blank" rel="noopener noreferrer">Source / report a bug</a></nav>
-    </footer>
-    <noscript>Enable JavaScript to play DEAD SIGNAL.</noscript>
+    <nav id="utilities" aria-label="Game utilities">
+      <a href="/credits.html" target="_blank" rel="noopener noreferrer">Credits</a>
+      <a href="https://github.com/OpenStaticFish/redot-doom" target="_blank" rel="noopener noreferrer">Source</a>
+      <button id="fullscreen" type="button">Fullscreen</button>
+    </nav>
+    <span id="session" class="screen-reader-only" role="status">Desktop browser / WebGL 2</span>
   </main>
   <script src="$GODOT_URL"></script>
   <script>
@@ -85,7 +66,7 @@
       const progress = document.getElementById('progress');
       const status = document.getElementById('status');
       const session = document.getElementById('session');
-      const pause = document.getElementById('pause');
+      const utilities = document.getElementById('utilities');
       let pauseGame = () => {};
       let persistent = true;
       let starting = false;
@@ -94,7 +75,7 @@
         setPersistent(value) { persistent = value; },
         setState(state) {
           document.documentElement.dataset.gameState = state;
-          pause.hidden = state !== 'playing';
+          utilities.hidden = state === 'playing';
           session.textContent = state === 'playing' ? 'Signal connected / P or Esc to pause' :
             (persistent ? 'Click the game to focus / saves stay in this browser' : 'Storage unavailable / saves last only for this session');
         }
@@ -102,6 +83,8 @@
       const engine = new Engine($GODOT_CONFIG);
       function failure(error) {
         document.documentElement.dataset.boot = 'error';
+        document.getElementById('overlay').hidden = false;
+        utilities.hidden = false;
         status.textContent = error instanceof Error ? error.message : String(error);
         progress.hidden = true;
         play.disabled = false;
@@ -144,7 +127,6 @@
       document.addEventListener('fullscreenchange', () => {
         document.getElementById('fullscreen').textContent = document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen';
       });
-      pause.onclick = () => pauseGame();
       document.addEventListener('pointerlockchange', () => {
         if (!document.pointerLockElement) pauseGame();
       });

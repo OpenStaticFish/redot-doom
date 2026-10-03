@@ -43,8 +43,11 @@ Classic rules: horizontal mouse aim, vertical auto-aim, no jumping, no magazines
 
 The web edition requires a current **desktop WebGL 2 browser, keyboard and mouse**.
 Click **Connect & play**, then choose a difficulty in the game. There are no touch
-controls. Use **P** or Escape to pause, the page's Fullscreen button to enlarge the
-game, and the pause menu to save/load. Losing mouse capture or switching tabs
+controls. The game occupies the entire browser window, without a surrounding
+header, footer or embedded-player frame. The 16:9 view scales without stretching
+or cropping; other window shapes use letterboxing. Use **P** or Escape to pause,
+the small Fullscreen control on the title/pause screens to hide browser chrome,
+and the pause menu to save/load. Losing mouse capture or switching tabs
 pauses automatically. Saves use this browser's IndexedDB storage; clearing site
 data deletes them, and private browsing may not retain them.
 
@@ -140,7 +143,7 @@ redot --headless --editor --import --path .
 - `scripts/redot_portrait.gd` — event-driven portrait holds, priorities and continuous blends
 - `scripts/weapon_view.gd` — weapon-specific viewmodel placement and animation
 - `scripts/audio.gd` — soundtrack and pooled sound playback
-- `scripts/browser_support.gd` — browser lifecycle/page-toolbar bridge
+- `scripts/browser_support.gd` — browser lifecycle/web-shell bridge
 - `shaders/retro.gdshader` — optional palette, scanline, vignette treatment
 - `shaders/portrait_blend.gdshader` — tiny alpha-correct portrait compositor
 - `tools/generate_assets.py` — reproducible original art/audio
