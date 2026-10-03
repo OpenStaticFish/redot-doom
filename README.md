@@ -42,8 +42,10 @@ Classic rules: horizontal mouse aim, vertical auto-aim, no jumping, no magazines
 **Play online:** https://web-production-2bbe1.up.railway.app
 
 The web edition requires a current **desktop WebGL 2 browser, keyboard and mouse**.
-Click **Connect & play**, then choose a difficulty in the game. There are no touch
-controls. The game occupies the entire browser window, without a surrounding
+Opening the link loads straight into the game's title screen; there is no extra
+launch button. Browser audio unlocks on your first click or keypress. Choose a
+difficulty in the game. There are no touch controls. The game occupies the entire
+browser window, without a surrounding
 header, footer or embedded-player frame. The 16:9 view scales without stretching
 or cropping; other window shapes use letterboxing. Use **P** or Escape to pause,
 the small Fullscreen control on the title/pause screens to hide browser chrome,

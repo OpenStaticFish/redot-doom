@@ -8,7 +8,7 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   executablePath: process.env.CHROME_BIN ?? Bun.which("google-chrome") ?? undefined,
   headless: true,
-  args: ["--enable-unsafe-swiftshader"],
+  args: ["--enable-unsafe-swiftshader", "--autoplay-policy=document-user-activation-required"],
   ignoreDefaultArgs: ["--mute-audio"],
 });
 const errors: string[] = [];
@@ -80,20 +80,55 @@ try {
     }, { x, y });
     await page.mouse.click(point.x, point.y);
   };
-  const startGame = async () => {
-    await page.locator("#play").click();
+  const waitForGame = async () => {
     await page.waitForFunction(() => document.documentElement.dataset.boot === "ready");
     await state("menu");
   };
   await page.goto(url, { waitUntil: "networkidle" });
-  check(await page.locator("#play").isEnabled(), "accessible click-to-start loader");
-  await page.screenshot({ path: `${output}/dead-signal-web-landing.png`, fullPage: true });
-  await startGame();
-  check(await page.locator("#overlay").isHidden(), "loader closes after WASM startup");
-  await checkViewport("desktop");
-  check(await page.locator("header, footer, iframe, .toolbar, .controls").count() === 0, "no surrounding page chrome or embedded-player layout");
+  // Playwright's DOM evaluations can grant user activation. Probe startup via
+  // CDP with userGesture:false before any selectors, evaluations or input.
+  const cdp = await page.context().newCDPSession(page);
+  const bootResult = await cdp.send("Runtime.evaluate", {
+    userGesture: false, awaitPromise: true, returnByValue: true,
+    expression: `new Promise((resolve, reject) => {
+      const observer = new MutationObserver(read);
+      const timeout = setTimeout(() => { observer.disconnect(); reject(new Error('Automatic boot timed out')); }, 60000);
+      function read() {
+        const data = document.documentElement.dataset;
+        if (data.boot === 'error') {
+          clearTimeout(timeout); observer.disconnect(); reject(new Error(document.getElementById('status').textContent));
+        } else if (data.boot === 'ready' && data.gameState === 'menu') {
+          clearTimeout(timeout); observer.disconnect();
+          resolve({
+            noGate: !document.getElementById('play'),
+            noGesture: !navigator.userActivation.hasBeenActive,
+            focused: document.activeElement.id === 'canvas',
+            retryHidden: document.getElementById('retry').hidden,
+            overlayHidden: document.getElementById('overlay').hidden,
+            audioSuspended: window.audioProbe.contexts.length > 0 && window.audioProbe.contexts.every(context => context.state === 'suspended')
+          });
+        }
+      }
+      observer.observe(document.documentElement, { attributes: true });
+      read();
+    })`,
+  });
+  if (bootResult.exceptionDetails || !bootResult.result.value) throw new Error("Automatic boot probe failed: " + JSON.stringify(bootResult.exceptionDetails));
+  const boot = bootResult.result.value as Record<string, boolean>;
+  check(boot.noGate, "no Connect & play gate exists");
+  check(boot.noGesture, "game boots to its title screen without any user gesture");
+  check(boot.focused, "auto-start focuses the game for keyboard menus");
+  check(boot.retryHidden, "retry control stays hidden on successful startup");
+  check(boot.audioSuspended, "strict autoplay policy does not block startup while audio awaits input");
+  check(boot.overlayHidden, "loader closes after WASM startup");
+  const title = await cdp.send("Page.captureScreenshot", { format: "png" });
+  await Bun.write(`${output}/dead-signal-web-title.png`, Buffer.from(title.data, "base64"));
   await page.keyboard.press("Enter");
   await state("difficulty");
+  await page.waitForFunction(() => (window as unknown as { audioProbe: { contexts: AudioContext[] } }).audioProbe.contexts.some(context => context.state === "running"));
+  check(true, "the first game keypress unlocks audio without a separate activation button");
+  await checkViewport("desktop");
+  check(await page.locator("header, footer, iframe, .toolbar, .controls").count() === 0, "no surrounding page chrome or embedded-player layout");
   await clickGame(240, 172);
   await state("playing");
   check(true, "keyboard and scaled mouse menu input start the real campaign");
@@ -175,7 +210,7 @@ try {
       .map(entry => ({ name: entry.name.split("/").pop(), wireBytes: entry.encodedBodySize, decodedBytes: entry.decodedBodySize, ms: entry.duration })),
   }));
   await page.reload({ waitUntil: "networkidle" });
-  await startGame();
+  await waitForGame();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await state("playing");
@@ -198,6 +233,21 @@ try {
     await state("paused");
   }
   await page.screenshot({ path: `${output}/dead-signal-web-mobile.png`, fullPage: true });
+  const failurePage = await browser.newPage();
+  failurePage.setDefaultTimeout(60_000);
+  try {
+    await failurePage.route("**/*.pck", route => route.abort());
+    await failurePage.goto(url);
+    await failurePage.waitForFunction(() => document.documentElement.dataset.boot === "error");
+    check(await failurePage.locator("#retry").isVisible(), "a failed automatic download offers a retry button");
+    check((await failurePage.locator("#status").innerText()).length > 0, "automatic startup failures show a readable error");
+    await failurePage.unroute("**/*.pck");
+    await failurePage.locator("#retry").click();
+    await failurePage.waitForFunction(() => document.documentElement.dataset.boot === "ready");
+    check(true, "retry reloads and boots straight into the game");
+  } finally {
+    await failurePage.close();
+  }
   check(errors.length === 0, `no JavaScript/engine console errors: ${errors.join("\n")}`);
   console.log(JSON.stringify({ url, checks, errors, performance: performanceReport, gameplayFrames: frameReport }, null, 2));
 } finally {

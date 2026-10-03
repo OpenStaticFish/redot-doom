@@ -75,6 +75,14 @@ class WebBundleTests(unittest.TestCase):
         self.assertIn('window/stretch/mode="viewport"', project)
         self.assertIn('window/stretch/aspect="keep"', project)
 
+    def test_auto_start_has_no_launch_gate(self) -> None:
+        shell = (self.public / "index.html").read_text()
+        self.assertNotIn('id="play"', shell)
+        self.assertNotIn("Connect &amp; play", shell)
+        self.assertIn("async function startGame()", shell)
+        self.assertIn("      startGame();", shell)
+        self.assertIn('id="retry" type="button" hidden', shell)
+
     def test_notices_and_static_host_configuration(self) -> None:
         legal = self.public / "legal"
         self.assertEqual((legal / "MIT.txt").read_bytes(), (ROOT / "LICENSE").read_bytes())

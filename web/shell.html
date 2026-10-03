@@ -41,12 +41,12 @@
       <canvas id="canvas" width="480" height="270" tabindex="0" aria-label="Game. Use WASD to move, mouse to aim, click to fire, P to pause.">A WebGL 2 browser is required.</canvas>
       <div id="overlay">
         <div class="launch">
-          <div class="eyebrow">Facility 09 / Connection pending</div>
+          <div class="eyebrow">Facility 09 / Loading</div>
           <h1>DEAD SIGNAL</h1>
           <p class="tagline">Three sectors. Six weapons. One way out.</p>
-          <button class="primary" id="play" type="button">Connect &amp; play</button>
-          <progress id="progress" aria-label="Downloading game" hidden></progress>
-          <p id="status" role="status" aria-live="polite">Keyboard + mouse required. P / Esc to pause.<br>Saves stay in this browser.</p>
+          <progress id="progress" aria-label="Downloading game"></progress>
+          <p id="status" role="status" aria-live="polite">Loading the facility…</p>
+          <button class="primary" id="retry" type="button" hidden>Reload &amp; retry</button>
           <noscript>Enable JavaScript to play DEAD SIGNAL.</noscript>
         </div>
       </div>
@@ -62,14 +62,13 @@
     (() => {
       const canvas = document.getElementById('canvas');
       const stage = document.getElementById('stage');
-      const play = document.getElementById('play');
+      const retry = document.getElementById('retry');
       const progress = document.getElementById('progress');
       const status = document.getElementById('status');
       const session = document.getElementById('session');
       const utilities = document.getElementById('utilities');
       let pauseGame = () => {};
       let persistent = true;
-      let starting = false;
       window.deadSignal = {
         registerPause(callback) { pauseGame = callback; },
         setPersistent(value) { persistent = value; },
@@ -77,7 +76,7 @@
           document.documentElement.dataset.gameState = state;
           utilities.hidden = state === 'playing';
           session.textContent = state === 'playing' ? 'Signal connected / P or Esc to pause' :
-            (persistent ? 'Click the game to focus / saves stay in this browser' : 'Storage unavailable / saves last only for this session');
+            (persistent ? 'Enter or click to select / saves stay in this browser' : 'Storage unavailable / saves last only for this session');
         }
       };
       const engine = new Engine($GODOT_CONFIG);
@@ -87,14 +86,10 @@
         utilities.hidden = false;
         status.textContent = error instanceof Error ? error.message : String(error);
         progress.hidden = true;
-        play.disabled = false;
-        play.textContent = 'Reload & retry';
-        play.onclick = () => window.location.reload();
+        retry.hidden = false;
       }
-      play.onclick = async () => {
-        if (starting) return;
-        starting = true;
-        play.disabled = true;
+      async function startGame() {
+        document.documentElement.dataset.boot = 'loading';
         const missing = Engine.getMissingFeatures({ threads: false });
         if (missing.length) { failure('This browser needs: ' + missing.join(', ') + '. Try a current desktop browser with hardware acceleration.'); return; }
         progress.hidden = false;
@@ -116,7 +111,8 @@
           performance.measure('game-boot', 'game-start', 'game-ready');
           canvas.focus({ preventScroll: true });
         } catch (error) { failure(error); }
-      };
+      }
+      retry.onclick = () => window.location.reload();
       document.getElementById('fullscreen').onclick = async () => {
         try {
           if (document.fullscreenElement) await document.exitFullscreen();
@@ -137,6 +133,7 @@
         if (['Tab', 'F5', 'F9', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code) ||
             (event.ctrlKey && ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code))) event.preventDefault();
       });
+      startGame();
     })();
   </script>
 </body>
