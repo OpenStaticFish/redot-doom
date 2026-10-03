@@ -32,19 +32,36 @@ const GLYPHS = {
 	" ": [0,0,0,0,0,0,0]
 }
 
+static var _atlas: ImageTexture
+static var _regions: Dictionary = {}
+
+static func atlas() -> ImageTexture:
+	if _atlas != null:
+		return _atlas
+	var image = Image.create(GLYPHS.size() * 6, 7, false, Image.FORMAT_RGBA8)
+	image.fill(Color.TRANSPARENT)
+	var x = 0
+	for letter in GLYPHS:
+		_regions[letter] = Rect2(x, 0, 5, 7)
+		for y in range(7):
+			for bit in range(5):
+				if GLYPHS[letter][y] & (1 << (4 - bit)):
+					image.set_pixel(x + bit, y, Color.WHITE)
+		x += 6
+	_atlas = ImageTexture.create_from_image(image)
+	return _atlas
+
 static func width(text: String, scale: int = 1) -> int:
 	return maxi(0, text.length() * 6 - 1) * scale
 
 static func text(canvas: CanvasItem, value: String, at: Vector2, color: Color, scale: int = 1, shadow: bool = true) -> void:
 	if shadow:
 		text(canvas, value, at + Vector2(scale, scale), Color(0.02, 0.02, 0.025, color.a), scale, false)
+	var texture = atlas()
 	var x = int(at.x)
 	for letter in value.to_upper():
-		var rows = GLYPHS.get(letter, GLYPHS["?"])
-		for y in range(7):
-			for bit in range(5):
-				if rows[y] & (1 << (4 - bit)):
-					canvas.draw_rect(Rect2(x + bit * scale, int(at.y) + y * scale, scale, scale), color)
+		if letter != " ":
+			canvas.draw_texture_rect_region(texture, Rect2(x, int(at.y), 5 * scale, 7 * scale), _regions.get(letter, _regions["?"]), color)
 		x += 6 * scale
 
 static func centered(canvas: CanvasItem, value: String, y: float, color: Color, scale: int = 1) -> void:

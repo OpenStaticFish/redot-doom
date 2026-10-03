@@ -15,3 +15,7 @@ __pycache__/
 *.log
 export_credentials.cfg
 .godot-export/
+
+# Reproducible web exports (never publish caches or binaries in Git)
+/build/
+node_modules/

@@ -1,0 +1,35 @@
+map $uri $asset_cache {
+    default "no-cache";
+    "~^/dead-signal-[a-f0-9]{12}\.(wasm|pck|js|audio\.worklet\.js|audio\.position\.worklet\.js)$" "public, max-age=31536000, immutable";
+}
+
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    server_tokens off;
+
+    # Precompressed release assets avoid repeated server-side compression work.
+    gzip_static on;
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types application/javascript application/wasm application/octet-stream text/plain image/svg+xml;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Cache-Control $asset_cache always;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Every engine/data filename contains the build hash. HTML always revalidates.
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

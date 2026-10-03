@@ -19,6 +19,8 @@ var exit_position: Vector3
 var exit_visual: MeshInstance3D
 var navigation_revision = 0
 var animation_clock = 0.0
+var animation_frame = -1
+var revealed_tiles: Dictionary = {}
 
 const WORLD_ART = preload("res://assets/presentation/art.gd").ART
 
@@ -26,10 +28,14 @@ func _process(delta: float) -> void:
 	if game == null or game.state not in ["playing", "menu", "difficulty"]:
 		return
 	animation_clock += delta
+	var frame = int(animation_clock * 3)
+	if frame == animation_frame:
+		return
+	animation_frame = frame
 	for kind in WORLD_ART.animated_textures:
 		if materials.has(kind):
 			var frames: Array = WORLD_ART.animated_textures[kind]
-			materials[kind].albedo_texture = game.texture("textures/" + frames[int(animation_clock * 3) % frames.size()])
+			materials[kind].albedo_texture = game.texture("textures/" + frames[frame % frames.size()])
 
 func configure(owner_game: Node3D, index: int) -> void:
 	game = owner_game
@@ -194,10 +200,13 @@ func add_pickup(kind: String, pos: Vector3, id: int = -1) -> void:
 
 func reveal(pos: Vector3) -> void:
 	var center = position_tile(pos)
+	if revealed_tiles.has(center):
+		return
+	revealed_tiles[center] = true
 	for y in range(center.y - 5, center.y + 6):
 		for x in range(center.x - 5, center.x + 6):
 			var tile = Vector2i(x, y)
-			if Vector2(tile - center).length() < 5.5:
+			if Vector2(tile - center).length_squared() < 30.25:
 				explored[tile] = true
 
 func path_between(from: Vector3, to: Vector3) -> Array:

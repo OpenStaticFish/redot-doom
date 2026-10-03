@@ -36,6 +36,7 @@ var effects: Array = []
 var transient_root: Node3D
 var attract_time = 0.0
 var testing = false
+var browser: BrowserSupport
 
 func _ready() -> void:
 	testing = "--test" in OS.get_cmdline_user_args()
@@ -66,6 +67,8 @@ func _ready() -> void:
 	post_layer.add_child(post)
 	_load_sector(0)
 	_title_view()
+	if OS.has_feature("web"):
+		browser = BrowserSupport.new(self)
 	set_state("menu")
 	if not testing:
 		get_window().focus_exited.connect(_focus_lost)
@@ -189,12 +192,19 @@ func set_state(next: String) -> void:
 	hud.selection = 0
 	hud.hovered = -1
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if state == "playing" and not testing else Input.MOUSE_MODE_VISIBLE
+	if browser != null:
+		browser.state_changed(state)
 
 func _input(event: InputEvent) -> void:
 	if hud == null:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
+			KEY_P:
+				if state in ["playing", "paused"]:
+					set_state("paused" if state == "playing" else "playing")
+					get_viewport().set_input_as_handled()
+					return
 			KEY_F11:
 				var mode = DisplayServer.window_get_mode()
 				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if mode == DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -437,6 +447,7 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	campaign_totals = saved.totals
 	checkpoint = saved.checkpoint
 	level.explored = saved.explored
+	level.revealed_tiles.clear()
 	for i in range(mini(saved.enemies.size(), level.enemies.size())):
 		level.enemies[i].restore(saved.enemies[i])
 	for i in range(saved.pickups.size()):

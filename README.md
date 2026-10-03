@@ -31,11 +31,56 @@ Choose **Enter the Facility**, then a difficulty. **Marine** is the standard exp
 | 1–6 / mouse wheel | Choose weapon |
 | E / Space | Open doors, search secret walls, use exit |
 | Tab | Automap; movement remains active |
-| Escape | Pause / resume |
+| Escape / P | Pause / resume |
 | F5 / F9 | Quicksave / quickload |
 | F11 | Toggle fullscreen |
 
 Classic rules: horizontal mouse aim, vertical auto-aim, no jumping, no magazines or reloads. Armor absorbs part of incoming damage. Hazard suits protect against acid and lava for 30 seconds. Explosive barrels damage nearby monsters **and you**. Strange walls may hide secret supplies.
+
+### Browser build
+
+**Play online:** https://web-production-2bbe1.up.railway.app
+
+The web edition requires a current **desktop WebGL 2 browser, keyboard and mouse**.
+Click **Connect & play**, then choose a difficulty in the game. There are no touch
+controls. Use **P** or Escape to pause, the page's Fullscreen button to enlarge the
+game, and the pause menu to save/load. Losing mouse capture or switching tabs
+pauses automatically. Saves use this browser's IndexedDB storage; clearing site
+data deletes them, and private browsing may not retain them.
+
+To build a release export, install matching Redot/Godot web export templates:
+
+```sh
+./export-web.sh
+# Or choose another engine executable:
+REDOT_BIN=godot ./export-web.sh
+```
+
+The reproducible deployment bundle is written to `build/web/<build-id>/`; the
+current path is recorded in `build/web-path`. Old builds are left intact rather
+than deleting local files. The bundle includes Nginx, Railway healthcheck config,
+credits and original third-party notices. Refresh `web/engine-notices/` if you
+change the runtime version. Generated exports are excluded from Git.
+
+Deploy **only the generated bundle**, not the source tree:
+
+```sh
+# Confirm the intended Railway project/environment before deploying:
+railway status --json
+railway up "$(cat build/web-path)" --path-as-root --service web --environment production
+railway domain --service web --port 8080
+```
+
+The game remains at 480×270 internally, even in fullscreen. Single-threaded WASM
+avoids SharedArrayBuffer/cross-origin-isolation requirements. WebAudio sample
+playback reduces audio latency; desktop playback is unchanged. Cached glyphs
+preserve every original bitmap-font pixel, but a rendered regression workload
+uses **188 instead of 2,626 draw submissions**. Exploration updates once per
+visited tile and animated floor textures update at their authored 3-fps cadence.
+The initial engine + game download is about **10.3 MiB with gzip**, down from
+38.4 MiB uncompressed; fingerprinted files cache across visits and HTML revalidates
+on updates. Source-art bundles, reference sheets, hand-authoring layers and tests
+are excluded from the playable pack. No accounts or backend database are needed.
 
 ## Campaign
 
@@ -95,6 +140,7 @@ redot --headless --editor --import --path .
 - `scripts/redot_portrait.gd` — event-driven portrait holds, priorities and continuous blends
 - `scripts/weapon_view.gd` — weapon-specific viewmodel placement and animation
 - `scripts/audio.gd` — soundtrack and pooled sound playback
+- `scripts/browser_support.gd` — browser lifecycle/page-toolbar bridge
 - `shaders/retro.gdshader` — optional palette, scanline, vignette treatment
 - `shaders/portrait_blend.gdshader` — tiny alpha-correct portrait compositor
 - `tools/generate_assets.py` — reproducible original art/audio
@@ -104,6 +150,8 @@ redot --headless --editor --import --path .
 - `tools/build_world_art.py` — directional enemy, scenery, effect and texture builder
 - `tools/build_ui_art.py` — Redot-inspired logo/HUD/menu/exit-switch artwork
 - `tools/build_redot_chan.py` — offline expression-sheet adaptation
+- `export_presets.cfg`, `web/shell.html` — single-threaded web export and branded loader
+- `tools/build_web.py`, `deploy/` — fingerprinted/precompressed static Railway bundle
 
 ## Verification
 
@@ -161,3 +209,24 @@ redot --headless --path . --script res://tests/redot_ui.gd -- --test
 redot --path . --script res://tests/redot_ui.gd -- --test --capture --capture-dir=/tmp/opencode
 # Add --animate to capture a 30-fps sequence of the actual HUD reactions.
 ```
+
+Web-export and rendering-optimization checks:
+
+```sh
+./export-web.sh
+python3 tests/web_bundle.py
+redot --path . --script res://tests/pixel_font.gd
+redot --path . --script res://tests/performance.gd -- --test
+# Browser integration checks (Bun, Playwright and an installed Chrome):
+cd tests/browser
+bun install
+bun run test https://web-production-2bbe1.up.railway.app
+```
+
+Set `CHROME_BIN` to use a specific Chromium/Chrome executable and `CAPTURE_DIR` to
+choose screenshot output (defaults to `/tmp/opencode`). Browser checks cover real
+WASM startup, keyboard menus, pointer capture/loss, firing/WebAudio, automap,
+fullscreen, IndexedDB saves across reloads, responsive layout and console errors.
+The Python bundle audit checks actual PCK contents, dynamic resource availability,
+license inclusion and gzip/hash integrity. Font checks compare rendered pixels to
+the original implementation; performance results depend on renderer and hardware.

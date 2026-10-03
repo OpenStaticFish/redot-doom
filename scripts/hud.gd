@@ -267,7 +267,7 @@ func _draw_paused() -> void:
 	_panel(Rect2(102, 37, 276, 195))
 	PixelFont.centered(self, "PAUSED", 53, AMBER, 3)
 	PixelFont.centered(self, "REDOT-CHAN / SIGNAL ON HOLD", 81, DIM)
-	PixelFont.centered(self, "F5 SAVE / F9 LOAD / ESC RESUME", 217, DIM)
+	PixelFont.centered(self, "SAVE / LOAD IN MENU / P TO RESUME" if OS.has_feature("web") else "F5 SAVE / F9 LOAD / ESC RESUME", 217, DIM)
 
 func _draw_help() -> void:
 	_dim_screen()
@@ -278,7 +278,7 @@ func _draw_help() -> void:
 		["W A S D", "MOVE / STRAFE"], ["MOUSE / ARROWS", "TURN LEFT / RIGHT"],
 		["SHIFT", "RUN"], ["LEFT CLICK / CTRL", "FIRE / HOLD TO REPEAT"],
 		["1 - 6 / WHEEL", "SELECT WEAPON"], ["E / SPACE", "OPEN DOORS / USE EXIT"],
-		["TAB", "AUTOMAP"], ["F5 / F9", "QUICKSAVE / QUICKLOAD"], ["ESC / F11", "PAUSE / FULLSCREEN"]
+		["TAB", "AUTOMAP"], ["F5 / F9", "QUICKSAVE / QUICKLOAD"], ["P / ESC / F11", "PAUSE / FULLSCREEN"]
 	]
 	for i in range(rows.size()):
 		PixelFont.text(self, rows[i][0], Vector2(34, 81 + i * 12), PAPER)
@@ -343,7 +343,9 @@ func menu_items() -> Array:
 			var options = [["ENTER THE FACILITY", "new"]]
 			if FileAccess.file_exists(game.SAVE_PATH):
 				options.append(["CONTINUE RUN", "continue"])
-			options.append_array([["FIELD MANUAL", "help"], ["OPTIONS", "options"], ["QUIT", "quit"]])
+			options.append_array([["FIELD MANUAL", "help"], ["OPTIONS", "options"]])
+			if not OS.has_feature("web"):
+				options.append(["QUIT", "quit"])
 			return options
 		"difficulty": return [["EXPLORER", "easy"], ["MARINE", "normal"], ["NIGHTMARE", "hard"], ["BACK", "back"]]
 		"paused": return [["RESUME", "resume"], ["SAVE RUN", "save"], ["LOAD RUN", "load"], ["FIELD MANUAL", "help"], ["OPTIONS", "options"], ["RETURN TO TITLE", "title"]]

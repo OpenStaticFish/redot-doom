@@ -14,12 +14,12 @@ func _ready() -> void:
 	for i in range(16):
 		var player = AudioStreamPlayer.new()
 		player.bus = "SFX"
-		player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+		player.playback_type = AudioServer.PLAYBACK_TYPE_SAMPLE if OS.has_feature("web") else AudioServer.PLAYBACK_TYPE_STREAM
 		add_child(player)
 		pool.append(player)
 	music = AudioStreamPlayer.new()
 	music.bus = "Music"
-	music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+	music.playback_type = AudioServer.PLAYBACK_TYPE_SAMPLE if OS.has_feature("web") else AudioServer.PLAYBACK_TYPE_STREAM
 	var stream: AudioStreamWAV = load("res://assets/audio/music.wav").duplicate()
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
