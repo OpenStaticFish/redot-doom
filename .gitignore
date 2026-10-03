@@ -1,3 +1,17 @@
 # Redot 4+ specific ignores
 .godot/
 /android/
+
+# Asset-builder Python caches
+__pycache__/
+*.pyc
+.firecrawl/
+
+# Local credentials, player data and export caches
+.env
+.env.*
+!.env.example
+*.save
+*.log
+export_credentials.cfg
+.godot-export/

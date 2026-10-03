@@ -1,0 +1,15 @@
+# Asset credits
+
+DEAD SIGNAL combines original game/UI design and synthesized audio with classic sprite/texture artwork from **Freedoom 0.13.0**, under **BSD-3-Clause**. Copyright © 2001–2024 Contributors to the Freedoom project. Full license and upstream contributor credits are included with each source-art bundle.
+
+- **World/enemies:** 221 authored enemy frames, eight-way rotations, scenery/props, effects, wall/door/floor textures and animated acid/lava from Freedoom. The legacy marine portrait sheet is retained but is no longer used in the HUD. Source PNGs, license, credits and frame pivots are in `presentation/freedoom/`; `tools/build_world_art.py` builds their atlases. Colored access stripes adapt the doors to this campaign.
+- **Original graphics:** the sky, ceiling-light panels, contact shadows, bitmap font, DEAD SIGNAL logo, Redot-inspired menu/HUD panels and exit switch. The orange/near-black palette and pixel-grid motifs adapt https://www.redotengine.org/. UI artwork is reproducible with `tools/build_ui_art.py`.
+- **Redot-chan:** eight portrait poses adapted from the user-supplied **Redot-chan concept 2.0 / DLC 2** expression sheet, signed **Rune**. Includes six cropped/reduced source expressions, a desaturated defeated variant and a pixel-authored focused variant retained in the atlas but not used for shooting. Reference art and frame metadata are retained in `ui/redot_chan/`; `tools/build_redot_chan.py` rebuilds them offline. This supplied artwork is separate from Freedoom and is not represented as BSD-licensed; no new license is assumed.
+- **First-person weapons:** 30 weapon/hand animation and muzzle-flash frames adapted from **Freedoom 0.13.0**, Copyright © 2001–2024 Contributors to the Freedoom project, distributed under **BSD-3-Clause**. The 13 visible-hand poses are restyled to match Redot-chan with slimmer contours, warm pale skin, black sleeves and red cuffs by `tools/redot_hands.py`. Original gun/flash pixels and authored origins remain intact. Hand-only removal masks and replacement layers are retained in `weapons/redot_hands/`; `tools/build_weapon_sprites.py` composes the aligned atlases. Full license, upstream contributors and unmodified source PNGs are included in `weapons/freedoom/`.
+- **Pickups:** 17 Freedoom frames plus four original blue/red access-card frames cover all 15 pickup types. They are cropped, bottom-aligned and composed into atlases and HUD icons by `tools/build_pickup_sprites.py`. Freedoom source PNGs, license and contributor credits are included in `pickups/freedoom/`. The horizontal access cards (chip, stripe, security number and indicator) and ground-contact shadows are original.
+- **Font:** hand-authored in `scripts/pixel_font.gd`.
+- **Audio:** sixteen synthesized sound effects and an original sixteen-bar, minor-key synth-metal loop at 112 BPM. 22,050 Hz mono PCM WAV.
+
+Freedoom source: https://github.com/freedoom/freedoom/tree/v0.13.0
+
+No commercial Doom or Doom II assets are included. Doom is a trademark of its respective owners; DEAD SIGNAL is an original homage.

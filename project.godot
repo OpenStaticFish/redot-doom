@@ -10,11 +10,35 @@ config_version=5
 
 [application]
 
-config/name="redot-doom"
-config/features=PackedStringArray("26.2", "GL Compatibility", "Redot")
+config/name="DEAD SIGNAL"
+run/main_scene="res://scenes/main.tscn"
+config/description="A complete original, classic-style retro FPS. Three sectors. One way out."
+config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=480
+window/size/viewport_height=270
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
+
+[gui]
+
+theme/default_texture_filter=0
+
+[physics]
+
+common/physics_ticks_per_second=60
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.025, 0.02, 0.025, 1)
+anti_aliasing/quality/msaa_3d=0
+anti_aliasing/quality/screen_space_aa=0
